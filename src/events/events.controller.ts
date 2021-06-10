@@ -3,29 +3,68 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import CreateEventDto from './dto/create-event.dto';
 import UpdateEventDto from './dto/update-event.dto';
+import { Event } from './event.entity';
 
 @Controller('events')
 export class EventsController {
+  constructor(
+    @InjectRepository(Event)
+    private readonly eventsRepository: Repository<Event>,
+  ) {}
+
   @Get()
-  findAll() {}
+  async findAll(): Promise<Event[]> {
+    return this.eventsRepository.find();
+  }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {}
+  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Event> {
+    console.log(typeof id);
+
+    return this.eventsRepository.findOne({ id });
+  }
 
   @Post()
-  create(@Body() createEventDto: CreateEventDto) {
-    console.log(createEventDto);
+  async create(@Body() createEventDto: CreateEventDto): Promise<Event> {
+    const when = new Date(createEventDto.when);
+
+    const newEvent = this.eventsRepository.create({
+      ...createEventDto,
+      when,
+    });
+
+    await this.eventsRepository.save(newEvent);
+    return newEvent;
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {}
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateEventDto: UpdateEventDto,
+  ) {
+    const event = await this.findOne(id);
+    const updatedPost = {
+      ...event,
+      ...updateEventDto,
+      when: updateEventDto.when ? new Date(updateEventDto.when) : event.when,
+    };
+    await this.eventsRepository.update(+id, updatedPost);
+  }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {}
+  @HttpCode(204)
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    const event = await this.findOne(id);
+    await this.eventsRepository.remove(event);
+  }
 }
