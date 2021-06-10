@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  ValidationPipe,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -51,7 +52,7 @@ export class EventsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateEventDto: UpdateEventDto,
-  ) {
+  ): Promise<Event> {
     const event = await this.findOne(id);
     const updatedPost = {
       ...event,
@@ -59,6 +60,7 @@ export class EventsController {
       when: updateEventDto.when ? new Date(updateEventDto.when) : event.when,
     };
     await this.eventsRepository.update(+id, updatedPost);
+    return updatedPost;
   }
 
   @Delete(':id')
