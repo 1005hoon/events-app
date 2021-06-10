@@ -4,11 +4,11 @@ import {
   Delete,
   Get,
   HttpCode,
+  NotFoundException,
   Param,
   ParseIntPipe,
   Patch,
   Post,
-  ValidationPipe,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -30,9 +30,12 @@ export class EventsController {
 
   @Get(':id')
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Event> {
-    console.log(typeof id);
+    const event = await this.eventsRepository.findOne({ id });
+    if (!event) {
+      throw new NotFoundException();
+    }
 
-    return this.eventsRepository.findOne({ id });
+    return event;
   }
 
   @Post()
