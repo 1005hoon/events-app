@@ -26,6 +26,7 @@ import { EventDateFilterDto } from './dto/event-date-filter.dto';
 import { PaginationResult } from './pagination/paginator';
 import { CurrentUser } from 'src/auth/current-user.decorator';
 import { User } from 'src/auth/user.entity';
+import { EventNotFoundException } from './exception/event-not-found.exception';
 
 @Controller('events')
 @SerializeOptions({ strategy: 'excludeAll' })
@@ -35,28 +36,34 @@ export class EventsController {
   @Get()
   @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(new ValidationPipe({ transform: true }))
-  async getAllEvents(
+  async findAll(
     @Query() filter: EventDateFilterDto,
   ): Promise<PaginationResult<Event>> {
-    return this.eventsService.getPaginatedEvents(filter, {
-      total: true,
-      currentPage: filter.page,
-      limit: 10,
-    });
+    return this.eventsService.getEventsWithAttendeeCountFilteredPaginated(
+      filter,
+      {
+        total: true,
+        currentPage: filter.page,
+        limit: 10,
+      },
+    );
   }
 
   @Get(':id')
   @UseInterceptors(ClassSerializerInterceptor)
-  async getEvent(
+  async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Event | undefined> {
-    const event = await this.eventsService.getEventWithOrganizer(id);
-
+    const event = await this.eventsService.getEventWithAttendeeCount(id);
+    if (!event) {
+      throw new EventNotFoundException(id);
+    }
     return event;
   }
 
   @Post()
   @UseGuards(AuthGuardJwt)
+  @UseInterceptors(ClassSerializerInterceptor)
   async createEvent(
     @CurrentUser() user: User,
     @Body() createEventDto: CreateEventDto,
@@ -72,7 +79,7 @@ export class EventsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateEventDto: UpdateEventDto,
   ) {
-    const event = await this.eventsService.getEventWithOrganizer(id);
+    const event = await this.eventsService.findOne(id);
 
     if (event.organizer.id !== user.id) {
       throw new ForbiddenException(
@@ -81,7 +88,7 @@ export class EventsController {
       );
     }
 
-    return this.eventsService.updateEvent(id, updateEventDto);
+    return this.eventsService.updateEvent(event, updateEventDto);
   }
 
   @Delete(':id')
@@ -91,7 +98,7 @@ export class EventsController {
     @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<void> {
-    const event = await this.eventsService.getEventWithOrganizer(id);
+    const event = await this.eventsService.findOne(id);
 
     if (event.organizer.id !== user.id) {
       throw new ForbiddenException(

@@ -1,3 +1,4 @@
+import { Attendee } from './../events/attendee.entity';
 import { Profile } from './profile.entity';
 import {
   Column,
@@ -38,9 +39,12 @@ export class User {
 
   @OneToOne(() => Profile)
   @JoinColumn()
-  profile: Profile;
+  public profile: Profile;
 
   @OneToMany(() => Event, (event: Event) => event.organizer)
   @Expose()
-  organized: Event[];
+  public organized: Event[];
+
+  @OneToMany(() => Attendee, (attendee: Attendee) => attendee.user)
+  public attended: Attendee[];
 }

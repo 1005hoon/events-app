@@ -1,3 +1,5 @@
+import { Expose } from 'class-transformer';
+import { User } from 'src/auth/user.entity';
 import {
   Column,
   Entity,
@@ -13,16 +15,23 @@ export class Attendee {
   @PrimaryGeneratedColumn()
   public id: number;
 
-  @Column()
-  public name: string;
-
-  @ManyToOne(() => Event, (event: Event) => event.attendees)
+  @ManyToOne(() => Event, (event: Event) => event.attendees, { nullable: true })
   @JoinColumn()
   public event: Event;
+
+  @Column()
+  public eventId: number;
 
   @Column('enum', {
     enum: AttendResponse,
     default: AttendResponse.Attending,
   })
-  response: AttendResponse;
+  public response: AttendResponse;
+
+  @ManyToOne(() => User, (user: User) => user.attended)
+  @Expose()
+  public user: User;
+
+  @Column()
+  public userId: number;
 }

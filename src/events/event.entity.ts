@@ -8,9 +8,13 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Attendee } from './attendee.entity';
+import { PaginationResult } from './pagination/paginator';
 
 @Entity()
 export class Event {
+  constructor(partial?: Partial<Event>) {
+    Object.assign(this, partial);
+  }
   @PrimaryGeneratedColumn()
   @Expose()
   public id: number;
@@ -54,3 +58,5 @@ export class Event {
   @Expose()
   attendeeNotAttending?: number;
 }
+
+export type PaginatedEvents = PaginationResult<Event>;
