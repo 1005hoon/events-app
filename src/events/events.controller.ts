@@ -24,8 +24,8 @@ import { Event } from './event.entity';
 import { EventsService } from './events.service';
 import { EventDateFilterDto } from './dto/event-date-filter.dto';
 import { PaginationResult } from './pagination/paginator';
-import { CurrentUser } from 'src/auth/current-user.decorator';
-import { User } from 'src/auth/user.entity';
+import { CurrentUser } from './../auth/current-user.decorator';
+import { User } from './../auth/user.entity';
 import { EventNotFoundException } from './exception/event-not-found.exception';
 
 @Controller('events')
@@ -99,6 +99,10 @@ export class EventsController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<void> {
     const event = await this.eventsService.findOne(id);
+
+    if (!event) {
+      throw new EventNotFoundException(id);
+    }
 
     if (event.organizer.id !== user.id) {
       throw new ForbiddenException(

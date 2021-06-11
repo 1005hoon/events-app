@@ -9,7 +9,7 @@ import { EventDateFilterDto } from './dto/event-date-filter.dto';
 import { EventDateFilter } from './enum/event-date-filter.enum';
 import { paginate, PaginationOptions } from './pagination/paginator';
 import CreateEventDto from './dto/create-event.dto';
-import { User } from 'src/auth/user.entity';
+import { User } from './../auth/user.entity';
 import UpdateEventDto from './dto/update-event.dto';
 
 @Injectable()

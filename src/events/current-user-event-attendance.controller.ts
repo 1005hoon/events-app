@@ -17,8 +17,8 @@ import {
 } from '@nestjs/common';
 import { AttendeesService } from './attendees.service';
 import { EventsService } from './events.service';
-import { CurrentUser } from 'src/auth/current-user.decorator';
-import { User } from 'src/auth/user.entity';
+import { CurrentUser } from './../auth/current-user.decorator';
+import { User } from './../auth/user.entity';
 
 @Controller('events-attendance')
 @SerializeOptions({ strategy: 'excludeAll' })
