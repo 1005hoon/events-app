@@ -1,75 +1,98 @@
+import { AuthGuardJwt } from './../auth/auth-guard.jwt';
 import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
-  NotFoundException,
   Param,
   ParseIntPipe,
   Patch,
   Post,
+  Query,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import CreateEventDto from './dto/create-event.dto';
 import UpdateEventDto from './dto/update-event.dto';
 import { Event } from './event.entity';
+import { EventsService } from './events.service';
+import { EventDateFilterDto } from './dto/event-date-filter.dto';
+import { PaginationResult } from './pagination/paginator';
+import { CurrentUser } from 'src/auth/current-user.decorator';
+import { User } from 'src/auth/user.entity';
 
 @Controller('events')
 export class EventsController {
-  constructor(
-    @InjectRepository(Event)
-    private readonly eventsRepository: Repository<Event>,
-  ) {}
+  constructor(private readonly eventsService: EventsService) {}
 
   @Get()
-  async findAll(): Promise<Event[]> {
-    return this.eventsRepository.find();
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getAllEvents(
+    @Query() filter: EventDateFilterDto,
+  ): Promise<PaginationResult<Event>> {
+    return this.eventsService.getPaginatedEvents(filter, {
+      total: true,
+      currentPage: filter.page,
+      limit: 10,
+    });
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number): Promise<Event> {
-    const event = await this.eventsRepository.findOne({ id });
-    if (!event) {
-      throw new NotFoundException();
-    }
+  async getEvent(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Event | undefined> {
+    const event = await this.eventsService.getEvent(id);
 
     return event;
   }
 
   @Post()
-  async create(@Body() createEventDto: CreateEventDto): Promise<Event> {
-    const when = new Date(createEventDto.when);
-
-    const newEvent = this.eventsRepository.create({
-      ...createEventDto,
-      when,
-    });
-
-    await this.eventsRepository.save(newEvent);
-    return newEvent;
+  @UseGuards(AuthGuardJwt)
+  async createEvent(
+    @CurrentUser() user: User,
+    @Body() createEventDto: CreateEventDto,
+  ) {
+    return await this.eventsService.createEvent(createEventDto, user);
   }
 
   @Patch(':id')
-  async update(
+  @UseGuards(AuthGuardJwt)
+  async updateEvent(
+    @CurrentUser() user: User,
     @Param('id', ParseIntPipe) id: number,
     @Body() updateEventDto: UpdateEventDto,
-  ): Promise<Event> {
-    const event = await this.findOne(id);
-    const updatedPost = {
-      ...event,
-      ...updateEventDto,
-      when: updateEventDto.when ? new Date(updateEventDto.when) : event.when,
-    };
-    await this.eventsRepository.update(+id, updatedPost);
-    return updatedPost;
+  ) {
+    const event = await this.eventsService.getEventWithOrganizer(id);
+
+    if (event.organizer.id !== user.id) {
+      throw new ForbiddenException(
+        null,
+        '이벤트 주최자만 수정 및 삭제가 가능합니다',
+      );
+    }
+
+    return this.eventsService.updateEvent(id, updateEventDto);
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuardJwt)
   @HttpCode(204)
-  async remove(@Param('id', ParseIntPipe) id: number) {
-    const event = await this.findOne(id);
-    await this.eventsRepository.remove(event);
+  async remove(
+    @CurrentUser() user: User,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<void> {
+    const event = await this.eventsService.getEventWithOrganizer(id);
+
+    if (event.organizer.id !== user.id) {
+      throw new ForbiddenException(
+        null,
+        '이벤트 주최자만 수정 및 삭제가 가능합니다',
+      );
+    }
+
+    await this.eventsService.deleteEvent(id);
   }
 }

@@ -1,15 +1,41 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { User } from 'src/auth/user.entity';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Attendee } from './attendee.entity';
 
 @Entity()
 export class Event {
   @PrimaryGeneratedColumn()
   public id: number;
+
   @Column()
-  name: string;
+  public name: string;
+
   @Column()
-  description: string;
+  public description: string;
+
   @Column({ name: 'event_date' })
-  when: Date;
+  public when: Date;
+
   @Column()
-  address: string;
+  public address: string;
+
+  @OneToMany(() => Attendee, (attendee: Attendee) => attendee.event, {
+    eager: true,
+  })
+  public attendees: Attendee[];
+
+  @ManyToOne(() => User, (user: User) => user.organized, { eager: true })
+  organizer: User;
+
+  // virtual property
+  attendeesCount?: number;
+  attendeeAttending?: number;
+  attendeeMaybe?: number;
+  attendeeNotAttending?: number;
 }
