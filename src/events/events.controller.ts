@@ -1,6 +1,7 @@
 import { AuthGuardJwt } from './../auth/auth-guard.jwt';
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   ForbiddenException,
@@ -11,7 +12,9 @@ import {
   Patch,
   Post,
   Query,
+  SerializeOptions,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -25,10 +28,12 @@ import { CurrentUser } from 'src/auth/current-user.decorator';
 import { User } from 'src/auth/user.entity';
 
 @Controller('events')
+@SerializeOptions({ strategy: 'excludeAll' })
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
   @Get()
+  @UseInterceptors(ClassSerializerInterceptor)
   @UsePipes(new ValidationPipe({ transform: true }))
   async getAllEvents(
     @Query() filter: EventDateFilterDto,
@@ -41,10 +46,11 @@ export class EventsController {
   }
 
   @Get(':id')
+  @UseInterceptors(ClassSerializerInterceptor)
   async getEvent(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<Event | undefined> {
-    const event = await this.eventsService.getEvent(id);
+    const event = await this.eventsService.getEventWithOrganizer(id);
 
     return event;
   }
@@ -59,6 +65,7 @@ export class EventsController {
   }
 
   @Patch(':id')
+  @UseInterceptors(ClassSerializerInterceptor)
   @UseGuards(AuthGuardJwt)
   async updateEvent(
     @CurrentUser() user: User,

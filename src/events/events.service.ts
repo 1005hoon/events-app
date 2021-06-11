@@ -58,6 +58,7 @@ export class EventsService {
       ...createEventDto,
       when: new Date(createEventDto.when),
       organizer: user,
+      organizerId: user.id,
     });
   }
 

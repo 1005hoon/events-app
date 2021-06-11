@@ -1,3 +1,4 @@
+import { Expose } from 'class-transformer';
 import { User } from 'src/auth/user.entity';
 import {
   Column,
@@ -11,31 +12,45 @@ import { Attendee } from './attendee.entity';
 @Entity()
 export class Event {
   @PrimaryGeneratedColumn()
+  @Expose()
   public id: number;
 
   @Column()
+  @Expose()
   public name: string;
 
   @Column()
+  @Expose()
   public description: string;
 
   @Column({ name: 'event_date' })
+  @Expose()
   public when: Date;
 
   @Column()
+  @Expose()
   public address: string;
 
   @OneToMany(() => Attendee, (attendee: Attendee) => attendee.event, {
     eager: true,
   })
+  @Expose()
   public attendees: Attendee[];
 
   @ManyToOne(() => User, (user: User) => user.organized, { eager: true })
+  @Expose()
   organizer: User;
 
+  @Column({ nullable: true })
+  organizerId: number;
+
   // virtual property
+  @Expose()
   attendeesCount?: number;
+  @Expose()
   attendeeAttending?: number;
+  @Expose()
   attendeeMaybe?: number;
+  @Expose()
   attendeeNotAttending?: number;
 }
